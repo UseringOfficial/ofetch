@@ -1,4 +1,4 @@
-import type { FetchOptions, ResponseType } from "./types";
+import type { FetchHooks, FetchOptions, ResponseType } from "./types";
 
 const payloadMethods = new Set(
   Object.freeze(["PATCH", "POST", "PUT", "DELETE"])
@@ -64,6 +64,13 @@ export function detectResponseType(_contentType = ""): ResponseType {
   return "blob";
 }
 
+export const FETCH_HOOKS: ReadonlyArray<keyof FetchHooks> = [
+  "onRequest",
+  "onRequestError",
+  "onResponse",
+  "onResponseError",
+];
+
 // Merging of fetch option objects.
 export function mergeFetchOptions(
   input: FetchOptions | undefined,
@@ -97,5 +104,20 @@ export function mergeFetchOptions(
     }
   }
 
+  for (const name of FETCH_HOOKS) {
+    merged[name] = async (context, next) => {
+      return input?.[name]
+        ? await input[name](
+            context as any,
+            async () => await defaults?.[name]?.(context as any, next)
+          )
+        : await defaults?.[name]?.(context as any, next);
+    };
+  }
+
   return merged;
+}
+
+export async function noop(): Promise<void> {
+  // noop
 }

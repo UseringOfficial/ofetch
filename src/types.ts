@@ -33,8 +33,27 @@ export interface FetchContext<T = any, R extends ResponseType = ResponseType> {
 // Options
 // --------------------------
 
+export type FetchHookNext = () => Promise<void>;
+
+export interface FetchHooks<R extends ResponseType = ResponseType> {
+  onRequest?(context: FetchContext, next: FetchHookNext): Promise<void> | void;
+  onRequestError?(
+    context: FetchContext & { error: Error },
+    next: FetchHookNext
+  ): Promise<void> | void;
+  onResponse?(
+    context: FetchContext & { response: FetchResponse<R> },
+    next: FetchHookNext
+  ): Promise<void> | void;
+  onResponseError?(
+    context: FetchContext & { response: FetchResponse<R> },
+    next: FetchHookNext
+  ): Promise<void> | void;
+}
+
 export interface FetchOptions<R extends ResponseType = ResponseType>
-  extends Omit<RequestInit, "body"> {
+  extends Omit<RequestInit, "body">,
+    FetchHooks<R> {
   baseURL?: string;
   body?: RequestInit["body"] | Record<string, any>;
   ignoreResponseError?: boolean;
@@ -58,17 +77,6 @@ export interface FetchOptions<R extends ResponseType = ResponseType>
   retryDelay?: number | ((context: FetchContext) => number);
   /** Default is [408, 409, 425, 429, 500, 502, 503, 504] */
   retryStatusCodes?: number[];
-
-  onRequest?(context: FetchContext): Promise<void> | void;
-  onRequestError?(
-    context: FetchContext & { error: Error }
-  ): Promise<void> | void;
-  onResponse?(
-    context: FetchContext & { response: FetchResponse<R> }
-  ): Promise<void> | void;
-  onResponseError?(
-    context: FetchContext & { response: FetchResponse<R> }
-  ): Promise<void> | void;
 }
 
 export interface CreateFetchOptions {

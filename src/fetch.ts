@@ -7,6 +7,7 @@ import {
   isJSONSerializable,
   detectResponseType,
   mergeFetchOptions,
+  noop,
 } from "./utils";
 import type {
   CreateFetchOptions,
@@ -104,7 +105,7 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     context.options.method = context.options.method?.toUpperCase();
 
     if (context.options.onRequest) {
-      await context.options.onRequest(context);
+      await context.options.onRequest(context, noop);
     }
 
     if (typeof context.request === "string") {
@@ -177,7 +178,7 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     } catch (error) {
       context.error = error as Error;
       if (context.options.onRequestError) {
-        await context.options.onRequestError(context as any);
+        await context.options.onRequestError(context as any, noop);
       }
       return await onError(context);
     } finally {
@@ -216,7 +217,7 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     }
 
     if (context.options.onResponse) {
-      await context.options.onResponse(context as any);
+      await context.options.onResponse(context as any, noop);
     }
 
     if (
@@ -225,7 +226,7 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
       context.response.status < 600
     ) {
       if (context.options.onResponseError) {
-        await context.options.onResponseError(context as any);
+        await context.options.onResponseError(context as any, noop);
       }
       return await onError(context);
     }
@@ -245,10 +246,7 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
   $fetch.create = (defaultOptions = {}) =>
     createFetch({
       ...globalOptions,
-      defaults: {
-        ...globalOptions.defaults,
-        ...defaultOptions,
-      },
+      defaults: mergeFetchOptions(defaultOptions, globalOptions.defaults),
     });
 
   return $fetch;

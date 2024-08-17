@@ -1,6 +1,3 @@
-import { Readable } from "node:stream";
-import { listen } from "listhen";
-import { getQuery, joinURL } from "ufo";
 import {
   createApp,
   createError,
@@ -9,10 +6,14 @@ import {
   readRawBody,
   toNodeListener,
 } from "h3";
-import { describe, beforeAll, afterAll, it, expect } from "vitest";
-import { Headers, FormData, Blob } from "node-fetch-native";
+import { listen } from "listhen";
+import { Blob, FormData, Headers } from "node-fetch-native";
+import { Readable } from "node:stream";
 import { nodeMajorVersion } from "std-env";
-import { $fetch } from "../src/node";
+import { getQuery, joinURL } from "ufo";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { $fetch, createFetch, type FetchHooks } from "../src/node";
+import { noop } from "../src/utils";
 
 describe("ofetch", () => {
   let listener;
@@ -386,5 +387,38 @@ describe("ofetch", () => {
     });
 
     expect(path).to.eq("?b=2&c=3&a=1");
+  });
+
+  it("merge hooks", async () => {
+    const baseHooks: FetchHooks = {
+      onRequest: vi.fn(),
+      onResponse: vi.fn(),
+      onResponseError: vi.fn(),
+    };
+
+    const base = createFetch({
+      defaults: baseHooks,
+    });
+
+    const customize: FetchHooks = {
+      onRequest: vi.fn(async (_context, next) => {
+        await next();
+      }),
+      onResponse: vi.fn(async (_context, next) => {
+        await next();
+      }),
+      onResponseError: vi.fn(async (_context, next) => {
+        await next();
+      }),
+    };
+
+    const customFetch = base.create(customize);
+
+    await customFetch(getURL("403")).catch(noop);
+
+    for (const name of Object.keys(customize)) {
+      expect(customize[name]).toBeCalled();
+      expect(baseHooks[name]).toBeCalled();
+    }
   });
 });
