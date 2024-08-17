@@ -82,7 +82,7 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
 
     // Only available on V8 based runtimes (https://v8.dev/docs/stack-trace-api)
     if (Error.captureStackTrace) {
-      Error.captureStackTrace(error, $fetchRaw);
+      Error.captureStackTrace(error, context.$self);
     }
     throw error;
   }
@@ -92,6 +92,8 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     _options = {}
   ) {
     const context: FetchContext = {
+      $self: $fetchRaw,
+
       request: _request,
       options: mergeFetchOptions(_options, globalOptions.defaults, Headers),
       response: undefined,

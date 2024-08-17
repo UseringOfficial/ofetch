@@ -20,6 +20,8 @@ export interface $Fetch {
 // --------------------------
 
 export interface FetchContext<T = any, R extends ResponseType = ResponseType> {
+  $self: $Fetch["raw"];
+
   request: FetchRequest;
 
   options: FetchOptions<R>;
