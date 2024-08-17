@@ -82,7 +82,9 @@ describe("ofetch", () => {
         })
       );
 
-    listener = await listen(toNodeListener(app));
+    listener = await listen(toNodeListener(app), {
+      hostname: "localhost",
+    });
   });
 
   afterAll(() => {
