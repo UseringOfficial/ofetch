@@ -223,8 +223,8 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
 
     if (
       !context.options.ignoreResponseError &&
-      context.response.status >= 400 &&
-      context.response.status < 600
+      ((context.response.status >= 400 && context.response.status < 600) ||
+        context.error)
     ) {
       if (context.options.onResponseError) {
         await context.options.onResponseError(context as any, noop);

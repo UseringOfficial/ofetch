@@ -12,7 +12,15 @@ import { Readable } from "node:stream";
 import { nodeMajorVersion } from "std-env";
 import { getQuery, joinURL } from "ufo";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { $fetch, createFetch, type FetchHooks } from "../src/node";
+import { R } from "vitest/dist/reporters-yx5ZTtEV";
+import {
+  $fetch,
+  createFetch,
+  type FetchContext,
+  type FetchHookNext,
+  type FetchHooks,
+  type FetchResponse,
+} from "../src/node";
 import { noop } from "../src/utils";
 
 describe("ofetch", () => {
@@ -420,5 +428,23 @@ describe("ofetch", () => {
       expect(customize[name]).toBeCalled();
       expect(baseHooks[name]).toBeCalled();
     }
+  });
+
+  it("check error set by onResponse", async () => {
+    const message = "custom error";
+
+    const error = await $fetch(getURL("ok"), {
+      onResponse(
+        context: FetchContext & { response: FetchResponse<R> },
+        next: FetchHookNext
+      ): Promise<void> | void {
+        next();
+        context.error = new Error(message);
+      },
+    }).catch((error) => error);
+
+    expect(error.toString()).toBe(
+      'FetchError: [GET] "http://localhost:3000/ok": 200 OK custom error'
+    );
   });
 });
