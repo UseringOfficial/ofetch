@@ -49,6 +49,10 @@ export interface FetchHooks<R extends ResponseType = ResponseType> {
     context: FetchContext & { response: FetchResponse<R> },
     next: FetchHookNext
   ): Promise<void> | void;
+  hasBody?(
+    context: FetchContext & { response: FetchResponse<R> },
+    next: FetchHookNext
+  ): Promise<boolean> | boolean;
 }
 
 export interface FetchOptions<R extends ResponseType = ResponseType>

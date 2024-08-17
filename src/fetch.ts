@@ -188,7 +188,8 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     }
 
     const hasBody =
-      context.response.body &&
+      (context.response.body ||
+        context.options.hasBody?.(context as any, noop)) &&
       !nullBodyResponses.has(context.response.status) &&
       context.options.method !== "HEAD";
     if (hasBody) {
