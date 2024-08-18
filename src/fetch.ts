@@ -244,9 +244,13 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
 
   $fetch.native = (...args) => fetch(...args);
 
-  $fetch.create = (defaultOptions = {}) =>
+  $fetch.create = (
+    defaultOptions = {},
+    options: Omit<CreateFetchOptions, "defaults"> = {}
+  ) =>
     createFetch({
       ...globalOptions,
+      ...options,
       defaults: mergeFetchOptions(defaultOptions, globalOptions.defaults),
     });
 
