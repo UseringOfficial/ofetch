@@ -54,10 +54,6 @@ export interface FetchHooks<R extends ResponseType = ResponseType> {
     context: FetchContext & { response: FetchResponse<R> },
     next: FetchHookNext
   ): Promise<void> | void;
-  hasBody?(
-    context: FetchContext & { response: FetchResponse<R> },
-    next: FetchHookNext
-  ): Promise<boolean> | boolean;
 }
 
 export interface FetchOptions<R extends ResponseType = ResponseType>
@@ -87,6 +83,9 @@ export interface FetchOptions<R extends ResponseType = ResponseType>
   /** Default is [408, 409, 425, 429, 500, 502, 503, 504] */
   retryStatusCodes?: number[];
 
+  hasBody?(
+    context: FetchContext & { response: FetchResponse<R> }
+  ): Promise<boolean> | boolean;
   createFetchError?(context: FetchContext): FetchError;
 }
 

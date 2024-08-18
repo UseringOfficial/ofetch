@@ -1,10 +1,4 @@
-import type {
-  FetchContext,
-  FetchHookNext,
-  FetchHooks,
-  FetchOptions,
-  ResponseType,
-} from "./types";
+import type { FetchHooks, FetchOptions, ResponseType } from "./types";
 
 const payloadMethods = new Set(
   Object.freeze(["PATCH", "POST", "PUT", "DELETE"])
@@ -75,7 +69,6 @@ export const FETCH_HOOKS: ReadonlyArray<keyof FetchHooks> = [
   "onRequestError",
   "onResponse",
   "onResponseError",
-  "hasBody",
 ];
 
 // Merging of fetch option objects.
@@ -112,14 +105,14 @@ export function mergeFetchOptions(
   }
 
   for (const name of FETCH_HOOKS) {
-    merged[name] = (async (context, next) => {
+    merged[name] = async (context, next) => {
       return input?.[name]
         ? await input[name](
             context as any,
-            async () => (await defaults?.[name]?.(context as any, next)) as any
+            async () => await defaults?.[name]?.(context as any, next)
           )
         : await defaults?.[name]?.(context as any, next);
-    }) as (context: FetchContext, next: FetchHookNext) => any;
+    };
   }
 
   return merged;
