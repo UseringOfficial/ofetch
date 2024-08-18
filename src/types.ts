@@ -14,7 +14,7 @@ export interface $Fetch {
   native: Fetch;
   create(
     defaults: FetchOptions,
-    options: Omit<CreateFetchOptions, "defaults">
+    options?: Omit<CreateFetchOptions, "defaults">
   ): $Fetch;
 }
 
