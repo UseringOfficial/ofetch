@@ -2,6 +2,8 @@
 // $fetch API
 // --------------------------
 
+import type { FetchError } from "./error";
+
 export interface $Fetch {
   <T = any, R extends ResponseType = "json">(
     request: FetchRequest,
@@ -84,6 +86,8 @@ export interface FetchOptions<R extends ResponseType = ResponseType>
   retryDelay?: number | ((context: FetchContext) => number);
   /** Default is [408, 409, 425, 429, 500, 502, 503, 504] */
   retryStatusCodes?: number[];
+
+  createFetchError?(context: FetchContext): FetchError;
 }
 
 export interface CreateFetchOptions {
