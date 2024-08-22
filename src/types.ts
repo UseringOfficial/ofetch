@@ -2,6 +2,7 @@
 // $fetch API
 // --------------------------
 
+import type { ParsedQuery, QueryObject } from "ufo";
 import type { FetchError } from "./error";
 
 export interface $Fetch {
@@ -56,9 +57,15 @@ export interface FetchHooks<R extends ResponseType = ResponseType> {
   ): Promise<void> | void;
 }
 
+export interface WithQueryOptions {
+  stringifyQuery?(query: QueryObject): string;
+  parseQuery?(parametersString?: string): ParsedQuery;
+}
+
 export interface FetchOptions<R extends ResponseType = ResponseType>
   extends Omit<RequestInit, "body">,
-    FetchHooks<R> {
+    FetchHooks<R>,
+    WithQueryOptions {
   baseURL?: string;
   body?: RequestInit["body"] | Record<string, any>;
   ignoreResponseError?: boolean;

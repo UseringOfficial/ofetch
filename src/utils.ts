@@ -1,3 +1,10 @@
+import {
+  parseQuery as defaultParseQuery,
+  parseURL,
+  type QueryObject,
+  stringifyParsedURL,
+  stringifyQuery as defaultStringifyQuery,
+} from "ufo";
 import type { FetchHooks, FetchOptions, ResponseType } from "./types";
 
 const payloadMethods = new Set(
@@ -120,4 +127,18 @@ export function mergeFetchOptions(
 
 export async function noop(): Promise<void> {
   // noop
+}
+
+export function withQuery(
+  input: string,
+  query: QueryObject,
+  {
+    stringifyQuery = defaultStringifyQuery,
+    parseQuery = defaultParseQuery,
+  }: FetchOptions = {}
+): string {
+  const parsed = parseURL(input);
+  const mergedQuery = { ...parseQuery(parsed.search), ...query };
+  parsed.search = stringifyQuery(mergedQuery);
+  return stringifyParsedURL(parsed);
 }

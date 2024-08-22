@@ -6,11 +6,12 @@ import {
   readRawBody,
   toNodeListener,
 } from "h3";
-import { listen } from "listhen";
+import { listen, type Listener } from "listhen";
 import { Blob, FormData, Headers } from "node-fetch-native";
 import { Readable } from "node:stream";
+import * as qs from "qs";
 import { nodeMajorVersion } from "std-env";
-import { getQuery, joinURL } from "ufo";
+import { getQuery, joinURL, type QueryObject } from "ufo";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { R } from "vitest/dist/reporters-yx5ZTtEV";
 import {
@@ -24,8 +25,8 @@ import {
 import { noop } from "../src/utils";
 
 describe("ofetch", () => {
-  let listener;
-  const getURL = (url) => joinURL(listener.url, url);
+  let listener: Listener;
+  const getURL = (url: string) => joinURL(listener.url, url);
 
   beforeAll(async () => {
     const app = createApp()
@@ -106,7 +107,7 @@ describe("ofetch", () => {
 
   it("custom parseResponse", async () => {
     let called = 0;
-    const parser = (r) => {
+    const parser = (r: string) => {
       called++;
       return "C" + r;
     };
@@ -424,7 +425,7 @@ describe("ofetch", () => {
 
     await customFetch(getURL("403")).catch(noop);
 
-    for (const name of Object.keys(customize)) {
+    for (const name of Object.keys(customize) as Array<keyof FetchHooks>) {
       expect(customize[name]).toBeCalled();
       expect(baseHooks[name]).toBeCalled();
     }
@@ -446,5 +447,21 @@ describe("ofetch", () => {
     expect(error.toString()).toBe(
       'FetchError: [GET] "http://localhost:3000/ok": 200 OK custom error'
     );
+  });
+
+  it("custom stringify query", async () => {
+    const value = await $fetch(getURL("params"), {
+      query: {
+        foo: {
+          bar: {
+            baz: "value",
+          },
+        },
+      },
+      stringifyQuery(query: QueryObject): string {
+        return qs.stringify(query);
+      },
+    });
+    expect(value).toMatchSnapshot();
   });
 });

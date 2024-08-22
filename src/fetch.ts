@@ -1,6 +1,6 @@
 import type { Readable } from "node:stream";
 import destr from "destr";
-import { withBase, withQuery } from "ufo";
+import { withBase } from "ufo";
 import { createFetchError } from "./error";
 import {
   isPayloadMethod,
@@ -8,6 +8,7 @@ import {
   detectResponseType,
   mergeFetchOptions,
   noop,
+  withQuery,
 } from "./utils";
 import type {
   CreateFetchOptions,
@@ -115,10 +116,14 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
         context.request = withBase(context.request, context.options.baseURL);
       }
       if (context.options.query || context.options.params) {
-        context.request = withQuery(context.request, {
-          ...context.options.params,
-          ...context.options.query,
-        });
+        context.request = withQuery(
+          context.request,
+          {
+            ...context.options.params,
+            ...context.options.query,
+          },
+          context.options
+        );
       }
     }
 

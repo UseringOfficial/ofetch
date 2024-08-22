@@ -1,6 +1,6 @@
 {
   "name": "@UseringOfficial/ofetch",
-  "version": "1.4.6",
+  "version": "1.4.7-beta.0",
   "description": "A better fetch API. Works on node, browser and workers.",
   "repository": "UseringOfficial/ofetch",
   "license": "MIT",
@@ -76,6 +76,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.15",
+    "@types/qs": "^6.9.15",
     "@vitest/coverage-v8": "^1.6.0",
     "changelogen": "^0.5.5",
     "eslint": "^9.9.0",
@@ -86,6 +87,7 @@
     "jiti": "^1.21.6",
     "listhen": "^1.7.2",
     "prettier": "^3.3.3",
+    "qs": "^6.13.0",
     "std-env": "^3.7.0",
     "typescript": "^5.5.4",
     "unbuild": "2.0.0",
