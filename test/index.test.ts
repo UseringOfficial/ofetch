@@ -107,9 +107,11 @@ describe("ofetch", () => {
 
   it("custom parseResponse", async () => {
     let called = 0;
-    const parser = (r: string) => {
+    const parser = async (
+      context: FetchContext & { response: FetchResponse<R> }
+    ) => {
       called++;
-      return "C" + r;
+      return "C" + (await context.response.text());
     };
     expect(await $fetch(getURL("ok"), { parseResponse: parser })).to.equal(
       "Cok"

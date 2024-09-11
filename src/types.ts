@@ -71,7 +71,9 @@ export interface FetchOptions<R extends ResponseType = ResponseType>
   ignoreResponseError?: boolean;
   params?: Record<string, any>;
   query?: Record<string, any>;
-  parseResponse?: (responseText: string) => any;
+  parseResponse?: (
+    context: FetchContext & { response: FetchResponse<R> }
+  ) => Promise<any>;
   responseType?: R;
 
   /**

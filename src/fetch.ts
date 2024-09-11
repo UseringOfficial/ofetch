@@ -1,6 +1,7 @@
 import type { Readable } from "node:stream";
 import destr from "destr";
 import { withBase } from "ufo";
+import { Context } from "vitest";
 import { createFetchError } from "./error";
 import {
   isPayloadMethod,
@@ -199,27 +200,36 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
       !nullBodyResponses.has(context.response.status) &&
       context.options.method !== "HEAD";
     if (hasBody) {
-      const responseType =
-        (context.options.parseResponse
-          ? "json"
-          : context.options.responseType) ||
-        detectResponseType(context.response.headers.get("content-type") || "");
+      try {
+        if (context.options.parseResponse) {
+          context.response._data = await context.options.parseResponse(
+            context as any
+          );
+        } else {
+          const responseType =
+            context.options.responseType ||
+            detectResponseType(
+              context.response.headers.get("content-type") || ""
+            );
 
-      // We override the `.json()` method to parse the body more securely with `destr`
-      switch (responseType) {
-        case "json": {
-          const data = await context.response.text();
-          const parseFunction = context.options.parseResponse || destr;
-          context.response._data = parseFunction(data);
-          break;
+          // We override the `.json()` method to parse the body more securely with `destr`
+          switch (responseType) {
+            case "json": {
+              const data = await context.response.text();
+              context.response._data = destr(data);
+              break;
+            }
+            case "stream": {
+              context.response._data = context.response.body;
+              break;
+            }
+            default: {
+              context.response._data = await context.response[responseType]();
+            }
+          }
         }
-        case "stream": {
-          context.response._data = context.response.body;
-          break;
-        }
-        default: {
-          context.response._data = await context.response[responseType]();
-        }
+      } catch (error) {
+        context.error = error as Error | undefined;
       }
     }
 
@@ -261,4 +271,11 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     });
 
   return $fetch;
+}
+
+async function defaultParseResponse<R>(
+  context: FetchContext & { response: FetchResponse<R> }
+): Promise<R> {
+  const text = await context.response.text();
+  return destr(text);
 }
