@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## v1.5.0
+
+[compare changes](https://github.com/UseringOfficial/ofetch/compare/v1.4.8...v1.5.0)
+
+### 🚀 Enhancements
+
+- Add opt-in response body timeout ([ecd7509](https://github.com/UseringOfficial/ofetch/commit/ecd7509))
+
+### ❤️ Contributors
+
+- Kainstar <461345042@qq.com>
+
 ## v1.4.8
 
 [compare changes](https://github.com/UseringOfficial/ofetch/compare/v1.4.7...v1.4.8)
