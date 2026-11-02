@@ -2,6 +2,188 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## v2.0.0-alpha.3
+
+[compare changes](https://github.com/unjs/ofetch/compare/v2.0.0-alpha.2...v2.0.0-alpha.3)
+
+### 📦 Build
+
+- Fix exports field ([07403b3](https://github.com/unjs/ofetch/commit/07403b3))
+
+### ❤️ Contributors
+
+- Pooya Parsa ([@pi0](https://github.com/pi0))
+
+## v2.0.0-alpha.2
+
+[compare changes](https://github.com/unjs/ofetch/compare/v2.0.0-alpha.1...v2.0.0-alpha.2)
+
+### 📦 Build
+
+- Add `main` field ([98bda75](https://github.com/unjs/ofetch/commit/98bda75))
+
+### ❤️ Contributors
+
+- Pooya Parsa ([@pi0](https://github.com/pi0))
+
+## v2.0.0-alpha.1
+
+[compare changes](https://github.com/unjs/ofetch/compare/v1.4.1...v2.0.0-alpha.1)
+
+### 🚀 Enhancements
+
+- Serialize with `URLSearchParams` for `application/x-www-form-urlencoded` content type header ([#482](https://github.com/unjs/ofetch/pull/482))
+- Auto detect `text/event-stream` as `stream` response type ([#486](https://github.com/unjs/ofetch/pull/486))
+- ⚠️  Support custom `AbortSignal` with `timeout` ([#508](https://github.com/unjs/ofetch/pull/508))
+
+### 🩹 Fixes
+
+- Mark `FormData` & `URLSearchParams` as non-serializable for bun compatibility ([#483](https://github.com/unjs/ofetch/pull/483))
+
+### 💅 Refactors
+
+- Deprecate `params` in favor of `query` ([#511](https://github.com/unjs/ofetch/pull/511))
+- More strict types ([413397a](https://github.com/unjs/ofetch/commit/413397a))
+- ⚠️  Remove dependency on node-fetch-native ([#518](https://github.com/unjs/ofetch/pull/518))
+- ⚠️  Inline url utils ([#440](https://github.com/unjs/ofetch/pull/440))
+- ⚠️  Use native `JSON.parse` ([#520](https://github.com/unjs/ofetch/pull/520))
+
+### 📖 Documentation
+
+- **readme:** Use `ProxyAgent` in example ([#465](https://github.com/unjs/ofetch/pull/465))
+- Fix typo ([#472](https://github.com/unjs/ofetch/pull/472))
+- Add `retryStatusCodes` option to auto retry example ([#480](https://github.com/unjs/ofetch/pull/480))
+- Guide on augmenting `FetchOptions` ([#487](https://github.com/unjs/ofetch/pull/487))
+- Replace ProxyAgent with Agent in self-signed certs example ([#516](https://github.com/unjs/ofetch/pull/516))
+
+### 📦 Build
+
+- ⚠️  ESM-only dist ([#519](https://github.com/unjs/ofetch/pull/519))
+
+### 🏡 Chore
+
+- Update deps ([5b40e65](https://github.com/unjs/ofetch/commit/5b40e65))
+- Fix lint issue ([630f9f8](https://github.com/unjs/ofetch/commit/630f9f8))
+- Fix typos ([#452](https://github.com/unjs/ofetch/pull/452))
+- Update deps ([c35e71e](https://github.com/unjs/ofetch/commit/c35e71e))
+- Update ci ([d146a87](https://github.com/unjs/ofetch/commit/d146a87))
+- Update docs ([#501](https://github.com/unjs/ofetch/pull/501))
+- Fix test coverage ([1c7c34d](https://github.com/unjs/ofetch/commit/1c7c34d))
+- Update deps ([560dcd4](https://github.com/unjs/ofetch/commit/560dcd4))
+- Update ci ([675bde2](https://github.com/unjs/ofetch/commit/675bde2))
+- Prepare for v2 alpha ([6035012](https://github.com/unjs/ofetch/commit/6035012))
+- Update playground ([9fa0747](https://github.com/unjs/ofetch/commit/9fa0747))
+- Simplify readme ([d0440f0](https://github.com/unjs/ofetch/commit/d0440f0))
+- Fix version ([8912da8](https://github.com/unjs/ofetch/commit/8912da8))
+
+### ✅ Tests
+
+- Upgrade to h3 v2 ([7afa20a](https://github.com/unjs/ofetch/commit/7afa20a))
+
+#### ⚠️ Breaking Changes
+
+- ⚠️  Support custom `AbortSignal` with `timeout` ([#508](https://github.com/unjs/ofetch/pull/508))
+- ⚠️  Remove dependency on node-fetch-native ([#518](https://github.com/unjs/ofetch/pull/518))
+- ⚠️  Inline url utils ([#440](https://github.com/unjs/ofetch/pull/440))
+- ⚠️  Use native `JSON.parse` ([#520](https://github.com/unjs/ofetch/pull/520))
+- ⚠️  ESM-only dist ([#519](https://github.com/unjs/ofetch/pull/519))
+
+### ❤️ Contributors
+
+- Pooya Parsa ([@pi0](https://github.com/pi0))
+- Johann Schopplich <mail@johannschopplich.com>
+- Robin <robin.kehl@singular-it.de>
+- Eugene ([@outslept](https://github.com/outslept))
+- Kricsleo ([@kricsleo](https://github.com/kricsleo))
+- Abeer0 ([@iiio2](https://github.com/iiio2))
+- Kanon ([@ysknsid25](https://github.com/ysknsid25))
+- @beer ([@iiio2](https://github.com/iiio2))
+- Jan-Henrik Damaschke <jdamaschke@outlook.de>
+
+## v1.4.1
+
+[compare changes](https://github.com/unjs/ofetch/compare/v1.4.0...v1.4.1)
+
+### 🩹 Fixes
+
+- Remove undefined `method` and `query`/`params` from fetch options ([#451](https://github.com/unjs/ofetch/pull/451))
+- Use `response._bodyInit` as fallback for react-native and qq ([#398](https://github.com/unjs/ofetch/pull/398))
+
+### 🏡 Chore
+
+- **examples:** Fix typos ([#450](https://github.com/unjs/ofetch/pull/450))
+- Update dependencies ([caaf04d](https://github.com/unjs/ofetch/commit/caaf04d))
+- Update eslint config ([b4c9990](https://github.com/unjs/ofetch/commit/b4c9990))
+
+### ✅ Tests
+
+- Fix typo ([#448](https://github.com/unjs/ofetch/pull/448))
+
+### ❤️ Contributors
+
+- Joshua Sosso ([@joshmossas](http://github.com/joshmossas))
+- Pooya Parsa ([@pi0](http://github.com/pi0))
+- @beer ([@iiio2](http://github.com/iiio2))
+- Cooper Roper <cooproper@hotmail.com>
+
+## v1.4.0
+
+[compare changes](https://github.com/unjs/ofetch/compare/v1.3.4...v1.4.0)
+
+### 🚀 Enhancements
+
+- Support `retryDelay` with callback function ([#372](https://github.com/unjs/ofetch/pull/372))
+- Add better message and code for timeout error ([#351](https://github.com/unjs/ofetch/pull/351))
+- Allow custom global options for `$fetch.create` ([#401](https://github.com/unjs/ofetch/pull/401))
+- Support interceptors arrays ([#353](https://github.com/unjs/ofetch/pull/353))
+- Always clone and normalize `options.headers` and `options.query` ([#436](https://github.com/unjs/ofetch/pull/436))
+
+### 🩹 Fixes
+
+- Export types from `node` export condition ([#407](https://github.com/unjs/ofetch/pull/407))
+- Use wrapper to allow patching global `fetch` ([#377](https://github.com/unjs/ofetch/pull/377))
+
+### 📖 Documentation
+
+- Add docs for using undici dispatcher ([#389](https://github.com/unjs/ofetch/pull/389))
+
+### 🌊 Types
+
+- Add `agent` and `dispatcher` options (node-specific) ([#308](https://github.com/unjs/ofetch/pull/308))
+
+### 🏡 Chore
+
+- **release:** V1.3.4 ([5cc16a0](https://github.com/unjs/ofetch/commit/5cc16a0))
+- Remove extra space ([#384](https://github.com/unjs/ofetch/pull/384))
+- Update deps ([509a037](https://github.com/unjs/ofetch/commit/509a037))
+- Update to eslint v9 ([e63c598](https://github.com/unjs/ofetch/commit/e63c598))
+- Apply automated fixes ([f8f5413](https://github.com/unjs/ofetch/commit/f8f5413))
+- Add back spoiler ([dba1915](https://github.com/unjs/ofetch/commit/dba1915))
+- Add experimental for `Too Early` status ([#426](https://github.com/unjs/ofetch/pull/426))
+- Update dependencies ([b5fe505](https://github.com/unjs/ofetch/commit/b5fe505))
+- Update deps ([20f67b9](https://github.com/unjs/ofetch/commit/20f67b9))
+
+### ✅ Tests
+
+- Add additional tests for hook errors ([7ff4d11](https://github.com/unjs/ofetch/commit/7ff4d11))
+
+### 🤖 CI
+
+- Update node version ([4faac04](https://github.com/unjs/ofetch/commit/4faac04))
+- Update autifix ([79483ab](https://github.com/unjs/ofetch/commit/79483ab))
+
+### ❤️ Contributors
+
+- Pooya Parsa ([@pi0](http://github.com/pi0))
+- Antoine Rey <antoinerey38@gmail.com>
+- Cafu Chino <kirino@cafuchino.cn>
+- Marco Solazzi <marco.solazzi@gmail.com>
+- @beer ([@iiio2](http://github.com/iiio2))
+- Daniel Roe ([@danielroe](http://github.com/danielroe))
+- Arlo <webfansplz@gmail.com>
+- Alexander Topalo <topaloalexander@gmail.com>
+- Sam Blowes <samblowes@hotmail.com>
+- Kongmoumou ([@kongmoumou](http://github.com/kongmoumou))
 ## v1.5.0
 
 [compare changes](https://github.com/UseringOfficial/ofetch/compare/v1.4.8...v1.5.0)
