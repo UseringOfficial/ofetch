@@ -2,8 +2,8 @@
 // $fetch API
 // --------------------------
 
-import type { ParsedQuery, QueryObject } from "ufo";
-import type { FetchError } from "./error";
+import type { FetchError } from "./error.ts";
+import type { WithQueryOptions } from "./utils.url.ts";
 
 export interface $Fetch {
   <T = any, R extends ResponseType = "json">(
@@ -15,15 +15,117 @@ export interface $Fetch {
     options?: FetchOptions<R>
   ): Promise<FetchResponse<MappedResponseType<R, T>>>;
   native: Fetch;
-  create(
-    defaults: FetchOptions,
-    options?: Omit<CreateFetchOptions, "defaults">
-  ): $Fetch;
+  create(defaults: FetchOptions, globalOptions?: CreateFetchOptions): $Fetch;
 }
 
 // --------------------------
-// Context
+// Options
 // --------------------------
+
+export interface FetchOptions<R extends ResponseType = ResponseType, T = any>
+  extends Omit<RequestInit, "body">,
+    FetchHooks<T, R>,
+    WithQueryOptions {
+  baseURL?: string;
+
+  body?: RequestInit["body"] | Record<string, any>;
+
+  ignoreResponseError?: boolean;
+
+  /**
+   * @deprecated use query instead.
+   */
+  params?: Record<string, any>;
+
+  query?: Record<string, any>;
+
+  parseResponse?: (
+    context: FetchContext & { response: FetchResponse<R> }
+  ) => Promise<any>;
+
+  responseType?: R;
+
+  /**
+   * @experimental Set to "half" to enable duplex streaming.
+   * Will be automatically set to "half" when using a ReadableStream as body.
+   * @see https://fetch.spec.whatwg.org/#enumdef-requestduplex
+   */
+  duplex?: "half" | undefined;
+
+  /**
+   * Only supported in Node.js >= 18 using undici
+   *
+   * @see https://undici.nodejs.org/#/docs/api/Dispatcher
+   */
+  dispatcher?: InstanceType<typeof import("undici").Dispatcher>;
+
+  /**
+   * Only supported older Node.js versions using node-fetch-native polyfill.
+   */
+  agent?: unknown;
+
+  /** timeout in milliseconds */
+  timeout?: number;
+
+  /** End the timeout at response headers (default) or after buffered body consumption. */
+  timeoutUntil?: "headers" | "body";
+
+  retry?: number | false;
+
+  /** Delay between retries in milliseconds. */
+  retryDelay?: number | ((context: FetchContext<T, R>) => number);
+
+  /** Default is [408, 409, 425, 429, 500, 502, 503, 504] */
+  retryStatusCodes?: number[];
+
+  hasBody?(
+    context: FetchContext & { response: FetchResponse<R> }
+  ): Promise<boolean> | boolean;
+
+  createFetchError?(context: FetchContext): FetchError;
+}
+
+export interface ResolvedFetchOptions<
+  R extends ResponseType = ResponseType,
+  T = any,
+> extends FetchOptions<R, T> {
+  headers: Headers;
+}
+
+export interface CreateFetchOptions {
+  defaults?: FetchOptions;
+  fetch?: Fetch;
+}
+
+export type GlobalOptions = Pick<
+  FetchOptions,
+  "timeout" | "timeoutUntil" | "retry" | "retryDelay"
+>;
+
+// --------------------------
+// Hooks and Context
+// --------------------------
+
+export type MaybePromise<T> = T | Promise<T>;
+export type MaybeArray<T> = T | T[];
+
+export type FetchHookNext = () => MaybePromise<void>;
+
+export type FetchHook<C extends FetchContext = FetchContext> = (
+  context: C,
+  next: FetchHookNext
+) => MaybePromise<void>;
+
+export interface FetchHooks<T = any, R extends ResponseType = ResponseType> {
+  onRequest?: MaybeArray<FetchHook<FetchContext<T, R>>>;
+  onRequestError?: MaybeArray<FetchHook<FetchContext<T, R> & { error: Error }>>;
+  onResponse?: MaybeArray<
+    FetchHook<FetchContext<T, R> & { response: FetchResponse<T> }>
+  >;
+  onResponseError?: MaybeArray<
+    FetchHook<FetchContext<T, R> & { response: FetchResponse<T> }>
+  >;
+}
 
 export interface FetchContext<T = any, R extends ResponseType = ResponseType> {
   $self: $Fetch["raw"];
@@ -34,83 +136,6 @@ export interface FetchContext<T = any, R extends ResponseType = ResponseType> {
   response?: FetchResponse<T>;
   error?: Error;
 }
-
-// --------------------------
-// Options
-// --------------------------
-
-export type FetchHookNext = () => Promise<void>;
-
-export interface FetchHooks<R extends ResponseType = ResponseType> {
-  onRequest?(context: FetchContext, next: FetchHookNext): Promise<void> | void;
-  onRequestError?(
-    context: FetchContext & { error: Error },
-    next: FetchHookNext
-  ): Promise<void> | void;
-  onResponse?(
-    context: FetchContext & { response: FetchResponse<R> },
-    next: FetchHookNext
-  ): Promise<void> | void;
-  onResponseError?(
-    context: FetchContext & { response: FetchResponse<R> },
-    next: FetchHookNext
-  ): Promise<void> | void;
-}
-
-export interface WithQueryOptions {
-  stringifyQuery?(query: QueryObject): string;
-  parseQuery?(parametersString?: string): ParsedQuery;
-}
-
-export interface FetchOptions<R extends ResponseType = ResponseType>
-  extends Omit<RequestInit, "body">,
-    FetchHooks<R>,
-    WithQueryOptions {
-  baseURL?: string;
-  body?: RequestInit["body"] | Record<string, any>;
-  ignoreResponseError?: boolean;
-  params?: Record<string, any>;
-  query?: Record<string, any>;
-  parseResponse?: (
-    context: FetchContext & { response: FetchResponse<R> }
-  ) => Promise<any>;
-  responseType?: R;
-
-  /**
-   * @experimental Set to "half" to enable duplex streaming.
-   * Will be automatically set to "half" when using a ReadableStream as body.
-   * https://fetch.spec.whatwg.org/#enumdef-requestduplex
-   */
-  duplex?: "half" | undefined;
-
-  /** timeout in milliseconds */
-  timeout?: number;
-  /** End the timeout at response headers (default) or after buffered body consumption. */
-  timeoutUntil?: "headers" | "body";
-
-  retry?: number | false;
-  /** Delay between retries in milliseconds. */
-  retryDelay?: number | ((context: FetchContext) => number);
-  /** Default is [408, 409, 425, 429, 500, 502, 503, 504] */
-  retryStatusCodes?: number[];
-
-  hasBody?(
-    context: FetchContext & { response: FetchResponse<R> }
-  ): Promise<boolean> | boolean;
-  createFetchError?(context: FetchContext): FetchError;
-}
-
-export interface CreateFetchOptions {
-  defaults?: FetchOptions;
-  fetch?: Fetch;
-  Headers?: typeof Headers;
-  AbortController?: typeof AbortController;
-}
-
-export type GlobalOptions = Pick<
-  FetchOptions,
-  "timeout" | "timeoutUntil" | "retry" | "retryDelay"
->;
 
 // --------------------------
 // Response Types

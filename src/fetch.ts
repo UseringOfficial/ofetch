@@ -1,22 +1,23 @@
 import type { Readable } from "node:stream";
-import destr from "destr";
-import { withBase } from "ufo";
-import { Context } from "vitest";
-import { createFetchError } from "./error";
+import { withBase, withQuery } from "./utils.url.ts";
+import { createFetchError } from "./error.ts";
 import {
   isPayloadMethod,
   isJSONSerializable,
   detectResponseType,
   mergeFetchOptions,
-  noop,
-  withQuery,
-} from "./utils";
+  resolveFetchOptions,
+  callHooks,
+} from "./utils.ts";
 import type {
   CreateFetchOptions,
   FetchResponse,
+  ResponseType,
   FetchContext,
   $Fetch,
-} from "./types";
+  FetchRequest,
+  FetchOptions,
+} from "./types.ts";
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
 const retryStatusCodes = new Set([
@@ -34,11 +35,7 @@ const retryStatusCodes = new Set([
 const nullBodyResponses = new Set([101, 204, 205, 304]);
 
 export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
-  const {
-    fetch = globalThis.fetch,
-    Headers = globalThis.Headers,
-    AbortController = globalThis.AbortController,
-  } = globalOptions;
+  const { fetch = globalThis.fetch } = globalOptions;
 
   async function onError(context: FetchContext): Promise<FetchResponse<any>> {
     // Is Abort
@@ -97,24 +94,31 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     throw error;
   }
 
-  const $fetchRaw: $Fetch["raw"] = async function $fetchRaw(
-    _request,
-    _options = {}
-  ) {
+  const $fetchRaw: $Fetch["raw"] = async function $fetchRaw<
+    T = any,
+    R extends ResponseType = "json",
+  >(_request: FetchRequest, _options: FetchOptions<R> = {}) {
     const context: FetchContext = {
       $self: $fetchRaw,
 
       request: _request,
-      options: mergeFetchOptions(_options, globalOptions.defaults, Headers),
+      options: resolveFetchOptions<R, T>(
+        _request,
+        _options,
+        globalOptions.defaults as unknown as FetchOptions<R, T>,
+        Headers
+      ),
       response: undefined,
       error: undefined,
     };
 
     // Uppercase method name
-    context.options.method = context.options.method?.toUpperCase();
+    if (context.options.method) {
+      context.options.method = context.options.method.toUpperCase();
+    }
 
     if (context.options.onRequest) {
-      await context.options.onRequest(context, noop);
+      await callHooks(context, context.options.onRequest);
     }
 
     if (typeof context.request === "string") {
@@ -131,22 +135,33 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
           context.options
         );
       }
+      if ("query" in context.options) {
+        delete context.options.query;
+      }
+      if ("params" in context.options) {
+        delete context.options.params;
+      }
     }
 
     if (context.options.body && isPayloadMethod(context.options.method)) {
       if (isJSONSerializable(context.options.body)) {
-        // JSON Body
-        // Automatically JSON stringify request bodies, when not already a string.
-        context.options.body =
-          typeof context.options.body === "string"
-            ? context.options.body
-            : JSON.stringify(context.options.body);
+        const contentType = context.options.headers.get("content-type");
+
+        // Automatically stringify request bodies, when not already a string.
+        if (typeof context.options.body !== "string") {
+          context.options.body =
+            contentType === "application/x-www-form-urlencoded"
+              ? new URLSearchParams(
+                  context.options.body as Record<string, any>
+                ).toString()
+              : JSON.stringify(context.options.body);
+        }
 
         // Set Content-Type and Accept headers to application/json by default
         // for JSON serializable request bodies.
         // Pass empty object as older browsers don't support undefined.
         context.options.headers = new Headers(context.options.headers || {});
-        if (!context.options.headers.has("content-type")) {
+        if (!contentType) {
           context.options.headers.set("content-type", "application/json");
         }
         if (!context.options.headers.has("accept")) {
@@ -169,9 +184,9 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
 
     let abortTimeout: NodeJS.Timeout | undefined;
     let timeoutController: AbortController | undefined;
+    const userSignal = context.options.signal;
 
-    // TODO: Can we merge signals?
-    if (!context.options.signal && context.options.timeout) {
+    if (context.options.timeout) {
       timeoutController = new AbortController();
       abortTimeout = setTimeout(() => {
         const error = new Error(
@@ -181,20 +196,26 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
         (error as any).code = 23; // DOMException.TIMEOUT_ERR
         timeoutController!.abort(error);
       }, context.options.timeout);
-      context.options.signal = timeoutController.signal;
+      context.options.signal = context.options.signal
+        ? AbortSignal.any([timeoutController.signal, context.options.signal])
+        : timeoutController.signal;
     }
 
     try {
-      context.response = await fetch(
-        context.request,
-        context.options as RequestInit
-      );
+      context.response = await fetch(context.request, {
+        ...context.options,
+      } as RequestInit);
       if (context.options.timeoutUntil !== "body") {
         clearTimeout(abortTimeout);
       }
 
       const hasBody =
-        (context.response.body || context.options.hasBody?.(context as any)) &&
+        (context.response.body ||
+          // https://github.com/unjs/ofetch/issues/324
+          // https://github.com/unjs/ofetch/issues/294
+          // https://github.com/JakeChampion/fetch/issues/1454
+          (context.response as any)._bodyInit ||
+          context.options.hasBody?.(context as any)) &&
         !nullBodyResponses.has(context.response.status) &&
         context.options.method !== "HEAD";
       if (hasBody) {
@@ -210,15 +231,17 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
                 context.response.headers.get("content-type") || ""
               );
 
-            // We override the `.json()` method to parse the body more securely with `destr`
             switch (responseType) {
               case "json": {
                 const data = await context.response.text();
-                context.response._data = destr(data);
+                if (data) {
+                  context.response._data = JSON.parse(data);
+                }
                 break;
               }
               case "stream": {
-                context.response._data = context.response.body;
+                context.response._data =
+                  context.response.body || (context.response as any)._bodyInit; // (see refs above)
                 break;
               }
               default: {
@@ -235,13 +258,16 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     } catch (error) {
       context.error = error as Error;
       if (context.options.onRequestError) {
-        await context.options.onRequestError(context as any, noop);
+        await callHooks(
+          context as FetchContext & { error: Error },
+          context.options.onRequestError
+        );
       }
     } finally {
       // Clear body deadlines too; retries need a fresh internal signal.
       if (timeoutController) {
         clearTimeout(abortTimeout);
-        context.options.signal = undefined;
+        context.options.signal = userSignal;
       }
     }
 
@@ -250,7 +276,10 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     }
 
     if (context.options.onResponse) {
-      await context.options.onResponse(context as any, noop);
+      await callHooks(
+        context as FetchContext & { response: FetchResponse<any> },
+        context.options.onResponse
+      );
     }
 
     if (
@@ -259,7 +288,10 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
         context.error)
     ) {
       if (context.options.onResponseError) {
-        await context.options.onResponseError(context as any, noop);
+        await callHooks(
+          context as FetchContext & { response: FetchResponse<any> },
+          context.options.onResponseError
+        );
       }
       return await onError(context);
     }
@@ -276,22 +308,15 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
 
   $fetch.native = (...args) => fetch(...args);
 
-  $fetch.create = (
-    defaultOptions = {},
-    options: Omit<CreateFetchOptions, "defaults"> = {}
-  ) =>
+  $fetch.create = (defaultOptions = {}, customGlobalOptions = {}) =>
     createFetch({
       ...globalOptions,
-      ...options,
-      defaults: mergeFetchOptions(defaultOptions, globalOptions.defaults),
+      ...customGlobalOptions,
+      defaults: mergeFetchOptions(
+        defaultOptions,
+        mergeFetchOptions(customGlobalOptions.defaults, globalOptions.defaults)
+      ),
     });
 
   return $fetch;
-}
-
-async function defaultParseResponse<R>(
-  context: FetchContext & { response: FetchResponse<R> }
-): Promise<R> {
-  const text = await context.response.text();
-  return destr(text);
 }
