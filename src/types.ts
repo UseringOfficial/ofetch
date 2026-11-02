@@ -85,6 +85,8 @@ export interface FetchOptions<R extends ResponseType = ResponseType>
 
   /** timeout in milliseconds */
   timeout?: number;
+  /** End the timeout at response headers (default) or after buffered body consumption. */
+  timeoutUntil?: "headers" | "body";
 
   retry?: number | false;
   /** Delay between retries in milliseconds. */
@@ -107,7 +109,7 @@ export interface CreateFetchOptions {
 
 export type GlobalOptions = Pick<
   FetchOptions,
-  "timeout" | "retry" | "retryDelay"
+  "timeout" | "timeoutUntil" | "retry" | "retryDelay"
 >;
 
 // --------------------------

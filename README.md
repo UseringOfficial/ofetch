@@ -143,13 +143,25 @@ await ofetch("http://google.com/404", {
 
 ## ✔️ Timeout
 
-You can specify `timeout` in milliseconds to automatically abort a request after a timeout (default is disabled).
+You can specify `timeout` in milliseconds to automatically abort a request after a timeout (default is disabled). By default, the timer stops when response headers arrive (`timeoutUntil: "headers"`), preserving the existing behavior.
 
 ```ts
 await ofetch("http://google.com/404", {
   timeout: 3000, // Timeout after 3 seconds
 });
 ```
+
+Use `timeoutUntil: "body"` to keep the same timer active while reading a buffered response body:
+
+```js
+await ofetch("/image.png", {
+  responseType: "blob",
+  timeout: 5000,
+  timeoutUntil: "body",
+});
+```
+
+The timeout applies to each attempt, including the time spent waiting for headers; retries get a fresh timer. Body timeouts use status code `408` when checking `retryStatusCodes`. With `responseType: "stream"`, the timer stops when the stream is returned; the caller controls subsequent reads. A custom `parseResponse` must honor the request signal or read from the response body to be interrupted. As before, supplying your own `signal` disables the internal timeout; response hooks are outside its scope.
 
 ## ✔️ Type Friendly
 

@@ -58,7 +58,12 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
         retries = isPayloadMethod(context.options.method) ? 0 : 1;
       }
 
-      const responseCode = (context.response && context.response.status) || 500;
+      const responseCode =
+        context.options.timeoutUntil === "body" &&
+        context.response &&
+        context.error?.name === "TimeoutError"
+          ? 408
+          : (context.response && context.response.status) || 500;
       if (
         retries > 0 &&
         (Array.isArray(context.options.retryStatusCodes)
@@ -163,19 +168,20 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
     }
 
     let abortTimeout: NodeJS.Timeout | undefined;
+    let timeoutController: AbortController | undefined;
 
     // TODO: Can we merge signals?
     if (!context.options.signal && context.options.timeout) {
-      const controller = new AbortController();
+      timeoutController = new AbortController();
       abortTimeout = setTimeout(() => {
         const error = new Error(
           "[TimeoutError]: The operation was aborted due to timeout"
         );
         error.name = "TimeoutError";
         (error as any).code = 23; // DOMException.TIMEOUT_ERR
-        controller.abort(error);
+        timeoutController!.abort(error);
       }, context.options.timeout);
-      context.options.signal = controller.signal;
+      context.options.signal = timeoutController.signal;
     }
 
     try {
@@ -183,54 +189,64 @@ export function createFetch(globalOptions: CreateFetchOptions = {}): $Fetch {
         context.request,
         context.options as RequestInit
       );
+      if (context.options.timeoutUntil !== "body") {
+        clearTimeout(abortTimeout);
+      }
+
+      const hasBody =
+        (context.response.body || context.options.hasBody?.(context as any)) &&
+        !nullBodyResponses.has(context.response.status) &&
+        context.options.method !== "HEAD";
+      if (hasBody) {
+        try {
+          if (context.options.parseResponse) {
+            context.response._data = await context.options.parseResponse(
+              context as any
+            );
+          } else {
+            const responseType =
+              context.options.responseType ||
+              detectResponseType(
+                context.response.headers.get("content-type") || ""
+              );
+
+            // We override the `.json()` method to parse the body more securely with `destr`
+            switch (responseType) {
+              case "json": {
+                const data = await context.response.text();
+                context.response._data = destr(data);
+                break;
+              }
+              case "stream": {
+                context.response._data = context.response.body;
+                break;
+              }
+              default: {
+                context.response._data = await context.response[responseType]();
+              }
+            }
+          }
+        } catch (error) {
+          context.error = timeoutController?.signal.aborted
+            ? timeoutController.signal.reason
+            : (error as Error);
+        }
+      }
     } catch (error) {
       context.error = error as Error;
       if (context.options.onRequestError) {
         await context.options.onRequestError(context as any, noop);
       }
-      return await onError(context);
     } finally {
-      if (abortTimeout) {
+      // Clear body deadlines too; retries need a fresh internal signal.
+      if (timeoutController) {
         clearTimeout(abortTimeout);
+        context.options.signal = undefined;
       }
     }
 
-    const hasBody =
-      (context.response.body || context.options.hasBody?.(context as any)) &&
-      !nullBodyResponses.has(context.response.status) &&
-      context.options.method !== "HEAD";
-    if (hasBody) {
-      try {
-        if (context.options.parseResponse) {
-          context.response._data = await context.options.parseResponse(
-            context as any
-          );
-        } else {
-          const responseType =
-            context.options.responseType ||
-            detectResponseType(
-              context.response.headers.get("content-type") || ""
-            );
-
-          // We override the `.json()` method to parse the body more securely with `destr`
-          switch (responseType) {
-            case "json": {
-              const data = await context.response.text();
-              context.response._data = destr(data);
-              break;
-            }
-            case "stream": {
-              context.response._data = context.response.body;
-              break;
-            }
-            default: {
-              context.response._data = await context.response[responseType]();
-            }
-          }
-        }
-      } catch (error) {
-        context.error = error as Error | undefined;
-      }
+    if (!context.response) {
+      return await onError(context);
     }
 
     if (context.options.onResponse) {
